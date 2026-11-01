@@ -171,3 +171,57 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
+
+// Provider 3: Custom Disease / Crop Question Endpoint
+app.post('/api/ask-disease', async (req, res) => {
+  try {
+    const { query } = req.body;
+
+    if (!query || query.trim().length === 0) {
+      return res.status(400).json({ error: 'Proshno lekha hoyni.' });
+    }
+
+    const cleanQuery = query.trim().toLowerCase();
+    const cacheKey = `custom_${cleanQuery}`;
+
+    if (cache.has(cacheKey)) {
+      console.log(`Serving custom query from cache: ${cacheKey}`);
+      return res.json({ advice: cache.get(cacheKey) });
+    }
+
+    const promptText = `
+Tumi West Bengal krishi o matshyo palon expert. 
+Chasi ba user er somoshya/proshno: "${query}"
+
+Niyom:
+1. Shudhu Bangla te sahaj bhashay uttor dao.
+2. Direct 3 theke 4 ti bullet point-e uttor dao (Kono bhomika ba outro likhbe na):
+   * Rog ba somoshya-ti ki karone hoyeche.
+   * Ki osudh, kitnashok ba sar ki matray proyog korte hobe (Dose soho).
+   * Poroborti shotorkota.
+`;
+
+    let advice = await callGroq(promptText);
+
+    if (!advice) {
+      advice = await callGemini(promptText);
+    }
+
+    if (!advice) {
+      advice = `* আক্রান্ত অংশ দ্রুত তুলে ফেলে দিন এবং পরিচ্ছন্ন চাষ বজায় রাখুন।\n* জমিতে অনুমোদিত কীটনাশক বা ছত্রাকনাশক সঠিক মাত্রায় (প্রতি লিটার জলে ১-২ মিলি/গ্রাম) স্প্রে করুন।\n* অতিরিক্ত সমস্যা হলে স্থানীয় কৃষি আধিকারিকের (ADA) পরামর্শ নিন।`;
+    } else {
+      cache.set(cacheKey, advice);
+      if (cache.size > 200) {
+        const firstKey = cache.keys().next().value;
+        cache.delete(firstKey);
+      }
+    }
+
+    res.json({ advice });
+
+  } catch (err) {
+    console.error("Custom query error:", err);
+    res.status(500).json({ error: "Poramorsho toiri kora jayni. Pore chesta korun." });
+  }
+});
