@@ -94,6 +94,7 @@ async function callGemini(promptText) {
   return null;
 }
 
+// Calculator Advisor Endpoint
 app.post('/api/ai-advisor', async (req, res) => {
   try {
     const { crop_type, land_area, calculations } = req.body;
@@ -167,13 +168,7 @@ Kono bhomika chara shudhu 3-te point likho.
   }
 });
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server listening on port ${PORT}`);
-});
-
-
-// Provider 3: Custom Disease / Crop Question Endpoint
+// Custom Disease / Question Endpoint (Must be above app.listen)
 app.post('/api/ask-disease', async (req, res) => {
   try {
     const { query } = req.body;
@@ -224,4 +219,10 @@ Niyom:
     console.error("Custom query error:", err);
     res.status(500).json({ error: "Poramorsho toiri kora jayni. Pore chesta korun." });
   }
+});
+
+// Server Listen (Always at the bottom)
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server listening on port ${PORT}`);
 });
